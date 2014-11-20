@@ -1,157 +1,122 @@
-# Hubot
+# Hubot for Slack with XMPP
 
-This is a version of GitHub's Campfire bot, hubot. He's pretty cool.
+HubotをXMPP経由でSlackに連携させる用のミニマムなファイル群です。  
+HubotはHerokuにデプロイする想定です。  
+PRIVATE GROUPにおいてもHubotが反応します。
 
-This version is designed to be deployed on [Heroku][heroku]. This README was generated for you by hubot to help get you started. Definitely update and improve to talk about your own instance, how to use and deploy, what functionality he has, etc!
+※[hubot-xmpp](https://github.com/markstory/hubot-xmpp)を利用しております。
 
-[heroku]: http://www.heroku.com
+## 事前準備
 
-### Testing Hubot Locally
+### 1. Hubot用のユーザーをSlackで用意しておく
 
-You can test your hubot by running the following.
+このユーザーがSlack上で反応するので、アイコンとかユーザ名とかbotにあったものにしくといいかもです。
 
-    % bin/hubot
+### 2. (任意)Hubot用のユーザーをPRIVATE GROUPに所属させておく
 
-You'll see some start up output about where your scripts come from and a
-prompt.
+PRIVATE GROUPでもhubotに反応してもらいたい場合はPRIVATE GROUPに所属させておきましょう。
 
-    [Sun, 04 Dec 2011 18:41:11 GMT] INFO Loading adapter shell
-    [Sun, 04 Dec 2011 18:41:11 GMT] INFO Loading scripts from /home/tomb/Development/hubot/scripts
-    [Sun, 04 Dec 2011 18:41:11 GMT] INFO Loading scripts from /home/tomb/Development/hubot/src/scripts
-    Hubot>
+## 設定方法
 
-Then you can interact with hubot by typing `hubot help`.
+### 1. このリポジトリをForkする
 
-    Hubot> hubot help
+このリポジトリをForkしてください。
 
-    Hubot> animate me <query> - The same thing as `image me`, except adds a few
-    convert me <expression> to <units> - Convert expression to given units.
-    help - Displays all of the help commands that Hubot knows about.
-    ...
+### 2. Forkしたファイルをローカルにgit cloneする
 
+    $ git clone https://github.com/blue-goheimochi/hubot-slack-xmpp-base.git
 
-### Scripting
+※カレントディレクトリをCloneしたファイルのあるディレクトリに移動しておいてください。
 
-Take a look at the scripts in the `./scripts` folder for examples.
-Delete any scripts you think are useless or boring.  Add whatever functionality you
-want hubot to have. Read up on what you can do with hubot in the [Scripting Guide](https://github.com/github/hubot/blob/master/docs/scripting.md).
+### 3. Procfileを編集する
 
-### Redis Persistence
+    $ vi Procfile
+    web: bin/hubot -a xmpp -n hubot-xmpp
 
-If you are going to use the `redis-brain.coffee` script from `hubot-scripts`
-(strongly suggested), you will need to add the Redis to Go addon on Heroku which requires a verified
-account or you can create an account at [Redis to Go][redistogo] and manually
-set the `REDISTOGO_URL` variable.
+Procfireに記述する -n [文字列]で指定した文字列（上の例で言うとhubot-xmpp）を監視してHubotが反応してくれます。  
 
-    % heroku config:set REDISTOGO_URL="..."
+※Slack上のユーザー名で反応するわけではないので注意  
+※Slack上のユーザー名とあわせておくのが吉
 
-If you don't require any persistence feel free to remove the
-`redis-brain.coffee` from `hubot-scripts.json` and you don't need to worry
-about redis at all.
+### 4. Heroku appを作成する
 
-[redistogo]: https://redistogo.com/
+    $ heroku create yourname-hubot-slack
 
-## Adapters
+※適当な名前でHeroku appを作成します。  
+※herokuコマンドを使用するためには[Heroku ToolBelt](https://toolbelt.heroku.com/)をインストールしておく必要があります。  
+※herokuにログインしていない場合は`heroku login`のコマンドでログインしてください。
 
-Adapters are the interface to the service you want your hubot to run on. This
-can be something like Campfire or IRC. There are a number of third party
-adapters that the community have contributed. Check
-[Hubot Adapters][hubot-adapters] for the available ones.
+### 5. Herokuにソースコードをデプロイする
 
-If you would like to run a non-Campfire or shell adapter you will need to add
-the adapter package as a dependency to the `package.json` file in the
-`dependencies` section.
+    $ git push heroku master
+    $ heroku ps:scale web=1
 
-Once you've added the dependency and run `npm install` to install it you can
-then run hubot with the adapter.
+※ここでワーカープロセスも指定しておきます。
 
-    % bin/hubot -a <adapter>
+### 6. HerokuのAddonを追加する
 
-Where `<adapter>` is the name of your adapter without the `hubot-` prefix.
+    $ heroku addons:add rediscloud
 
-[hubot-adapters]: https://github.com/github/hubot/blob/master/docs/adapters.md
+※redisのAddonを追加します。
 
-## hubot-scripts
+### 7. Herokuのconfig設定する
 
-There will inevitably be functionality that everyone will want. Instead
-of adding it to hubot itself, you can submit pull requests to
-[hubot-scripts][hubot-scripts].
+    $ heroku config:add HEROKU_URL=http://XXXXX.herokuapp.com
 
-To enable scripts from the hubot-scripts package, add the script name with
-extension as a double quoted string to the `hubot-scripts.json` file in this
-repo.
+※4. で作成したHeroku appのURLを指定します。
 
-[hubot-scripts]: https://github.com/github/hubot-scripts
+### 8. HubotとSlackの連携の設定をする
 
-## external-scripts
+※こちらの[URL](blue-goheimochi.hatenablog.com/entry/2014/10/19/SlackとHubotを連携させてPRIVATE_GROUPでも動くようにしてみた#HubotAndSlackSetting)でも解説しておりますのであわせてご確認いただければ幸いです。※
 
-Tired of waiting for your script to be merged into `hubot-scripts`? Want to
-maintain the repository and package yourself? Then this added functionality
-maybe for you!
+#### ■SlackのXMPPのGatewayを有効にする
 
-Hubot is now able to load scripts from third-party `npm` packages! To enable
-this functionality you can follow the following steps.
+https://my.slack.com/admin/settings#permissions  
+**管理者権限を持ったユーザ**で上記URLにアクセスし、  
+「Gateways」の「expand」で設定項目を開き、  
+「Enable XMPP gateway (SSL only) 」のチェックボックスをONにして「Save Setting」で保存する。
 
-1. Add the packages as dependencies into your `package.json`
-2. `npm install` to make sure those packages are installed
+#### ■Hubot用ユーザの認証情報を確認する。
 
-To enable third-party scripts that you've added you will need to add the package
-name as a double quoted string to the `external-scripts.json` file in this repo.
+https://my.slack.com/account/gateways  
+**Hubot用のユーザ**で上記URLにアクセスし、  
+「Getting Started: XMPP」の項目で認証情報を確認する。
 
-## Deployment
+#### ■Hubot用ユーザの認証情報をHerokuのconfigで設定する
 
-    % heroku create --stack cedar
-    % git push heroku master
-    % heroku ps:scale app=1
+    $ heroku config:add HUBOT_XMPP_USERNAME="hubot-xmpp@your-team.xmpp.slack.com"
+    $ heroku config:add HUBOT_XMPP_PASSWORD="HUBOT_XMPP_PASSWORD"
+    $ heroku config:add HUBOT_XMPP_ROOMS="test@conference.your-team.xmpp.slack.com"
 
-If your Heroku account has been verified you can run the following to enable
-and add the Redis to Go addon to your app.
+**・HUBOT_XMPP_USERNAME**  
+認証情報の確認の1.で表示されている、  
+「Your ID is `hubot-xmpp@your-team.xmpp.slack.com`」の部分を指定する。  
 
-    % heroku addons:add redistogo:nano
+**・HUBOT_XMPP_PASSWORD**  
+認証情報の確認の3.で表示されている、  
+「`HUBOT_XMPP_PASSWORD`as your password」の部分を指定する。
 
-If you run into any problems, checkout Heroku's [docs][heroku-node-docs].
+**・HUBOT_XMPP_ROOMS**  
+`[Channel名]@conference.your-team.xmpp.slack.com`で指定する。
+「`conference.your-team.xmpp.slack.com` for the server (i.e. put "conference." at the beginning of your XMPP host name)」の部分を@以降の文字列として指定。  
+複数のChannelを対象にしたい場合は、  
+`test@conference.your-team.xmpp.slack.com,test2@conference.your-team.xmpp.slack.com`  
+と、「,(カンマ)」区切りで指定する。
 
-You'll need to edit the `Procfile` to set the name of your hubot.
+### 9. SlackでHUBOT_SLACK_BOTNAME宛てにpingを送る
 
-More detailed documentation can be found on the
-[deploying hubot onto Heroku][deploy-heroku] wiki page.
+※3.で指定したbot名で、
 
-### Deploying to UNIX or Windows
+> hubot-xmpp ping
 
-If you would like to deploy to either a UNIX operating system or Windows.
-Please check out the [deploying hubot onto UNIX][deploy-unix] and
-[deploying hubot onto Windows][deploy-windows] wiki pages.
+or
 
-[heroku-node-docs]: http://devcenter.heroku.com/articles/node-js
-[deploy-heroku]: https://github.com/github/hubot/blob/master/docs/deploying/heroku.md
-[deploy-unix]: https://github.com/github/hubot/blob/master/docs/deploying/unix.md
-[deploy-windows]: https://github.com/github/hubot/blob/master/docs/deploying/unix.md
+> @hubot-xmpp ping
 
-## Campfire Variables
+`HUBOT_XMPP_ROOMS`で指定したチャンネルで投稿。
 
-If you are using the Campfire adapter you will need to set some environment
-variables. Refer to the documentation for other adapters and the configuraiton
-of those, links to the adapters can be found on [Hubot Adapters][hubot-adapters].
+> PONG
 
-Create a separate Campfire user for your bot and get their token from the web
-UI.
+とHubot用のユーザーから返ってくる。
 
-    % heroku config:set HUBOT_CAMPFIRE_TOKEN="..."
-
-Get the numeric IDs of the rooms you want the bot to join, comma delimited. If
-you want the bot to connect to `https://mysubdomain.campfirenow.com/room/42` 
-and `https://mysubdomain.campfirenow.com/room/1024` then you'd add it like this:
-
-    % heroku config:set HUBOT_CAMPFIRE_ROOMS="42,1024"
-
-Add the subdomain hubot should connect to. If you web URL looks like
-`http://mysubdomain.campfirenow.com` then you'd add it like this:
-
-    % heroku config:set HUBOT_CAMPFIRE_ACCOUNT="mysubdomain"
-
-[hubot-adapters]: https://github.com/github/hubot/blob/master/docs/adapters.md
-
-## Restart the bot
-
-You may want to get comfortable with `heroku logs` and `heroku restart`
-if you're having issues.
+以上。
